@@ -4,16 +4,26 @@ import pandas as pd
 import requests
 import os
 
+import supabase_client
+import email_service
+
 st.set_page_config(page_title="SET50 Sentiment Dashboard", layout="wide")
 
 # --- Config ---
 STOCKS = ['ADVANC', 'AOT', 'PTTEP', 'PTT', 'SCB', 'KBANK', 'BBL', 'CPALL', 'SCC', 'DELTA']
-API_KEY = st.secrets.get("PERPLEXITY_API_KEY", os.getenv("PERPLEXITY_API_KEY", ""))
+
+def _get_secret(key: str) -> str:
+    try:
+        return st.secrets[key]
+    except (KeyError, FileNotFoundError, AttributeError):
+        return os.getenv(key, "")
+
+API_KEY = _get_secret("PERPLEXITY_API_KEY")
 API_URL = "https://api.perplexity.ai/chat/completions"
 
 # --- Functions ---
 def get_sentiment(stock):
-    if not API_KEY or API_KEY == "":
+    if not API_KEY:
         return f"[Demo] หุ้น {stock} — กรุณาตั้งค่า PERPLEXITY_API_KEY"
     query = f"สรุปข่าวและ sentiment หุ้น {stock} วันนี้ (ภาษาไทยสั้นๆ)"
     headers = {
@@ -75,7 +85,6 @@ if run and selected_stocks:
 
     # --- Chart ---
     st.subheader("📈 Sentiment Overview")
-    color_map = {1: '#00cc44', 0: '#aaaaaa', -1: '#ff4444'}
     fig = px.bar(
         df, x='หุ้น', y='Sentiment Score',
         color='Sentiment Score',
@@ -106,17 +115,76 @@ if run and selected_stocks:
         hide_index=True
     )
 
+    # --- Save to Supabase ---
+    if supabase_client.is_configured():
+        saved = supabase_client.save_analysis(rows)
+        if saved:
+            st.toast("💾 บันทึกผลลัพธ์ลง Supabase แล้ว", icon="✅")
+
+    # --- Send email via Resend ---
+    notify_email = st.session_state.get("notify_email", "")
+    if notify_email and email_service.is_configured():
+        with st.spinner("กำลังส่งอีเมลรายงาน..."):
+            sent = email_service.send_report(notify_email, rows)
+        if sent:
+            st.toast(f"📧 ส่งรายงานไปที่ {notify_email} แล้ว", icon="✅")
+        else:
+            st.toast("ส่งอีเมลไม่สำเร็จ กรุณาตรวจสอบ RESEND_API_KEY", icon="⚠️")
+
 elif not run:
     st.info("👆 เลือกหุ้นแล้วกดปุ่ม **วิเคราะห์ Sentiment** ด้านบน")
 
 # --- Sidebar ---
 with st.sidebar:
     st.header("⚙️ การตั้งค่า")
-    st.markdown("**Perplexity API Key**")
+
+    # API Keys status
+    st.markdown("**Perplexity API**")
     if not API_KEY:
-        st.warning("ยังไม่ได้ตั้งค่า API Key\nไปที่ Streamlit Secrets แล้วเพิ่ม:\n```\nPERPLEXITY_API_KEY = 'your_key'\n```")
+        st.warning("ยังไม่ได้ตั้งค่า `PERPLEXITY_API_KEY`")
     else:
-        st.success("API Key พร้อมใช้งาน ✅")
+        st.success("Perplexity พร้อมใช้งาน ✅")
+
+    st.markdown("**Supabase**")
+    if supabase_client.is_configured():
+        st.success("Supabase เชื่อมต่อแล้ว ✅")
+    else:
+        st.info("ยังไม่ได้ตั้งค่า `SUPABASE_URL` / `SUPABASE_ANON_KEY`")
+
+    st.markdown("**Email (Resend)**")
+    if email_service.is_configured():
+        st.success("Resend พร้อมใช้งาน ✅")
+        notify = st.text_input(
+            "ส่งรายงานไปยังอีเมล",
+            placeholder="you@example.com",
+            key="notify_email"
+        )
+    else:
+        st.info("ยังไม่ได้ตั้งค่า `RESEND_API_KEY`")
+
+    st.markdown("---")
+
+    # History from Supabase
+    if supabase_client.is_configured():
+        st.markdown("**📜 ประวัติการวิเคราะห์**")
+        history = supabase_client.get_history(limit=30)
+        if history:
+            hist_df = pd.DataFrame(history)
+            hist_df["analyzed_at"] = pd.to_datetime(hist_df["analyzed_at"]).dt.strftime("%d/%m %H:%M")
+            hist_df = hist_df.rename(columns={
+                "stock": "หุ้น",
+                "signal": "สัญญาณ",
+                "analyzed_at": "เวลา"
+            })
+            st.dataframe(
+                hist_df[["เวลา", "หุ้น", "สัญญาณ"]],
+                use_container_width=True,
+                hide_index=True,
+                height=300
+            )
+        else:
+            st.caption("ยังไม่มีประวัติการวิเคราะห์")
+
     st.markdown("---")
     st.caption("หุ้นที่รองรับ: SET50")
     st.caption("Model: Perplexity Sonar")
