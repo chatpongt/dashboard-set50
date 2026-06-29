@@ -4,6 +4,8 @@
 
 แอปวิเคราะห์หุ้นไทย SET50 แบบ real-time — Sentiment + Valuation
 
+**Live:** https://chatpongt-dashboard-set50.streamlit.app/
+
 ---
 
 ## Pages
