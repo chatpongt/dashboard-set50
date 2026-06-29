@@ -2,31 +2,23 @@ import dash
 from dash import dcc, html, Input, Output
 import plotly.express as px
 import pandas as pd
-import requests
 import os
 
+import gemini_client
+
 STOCKS = ['ADVANC', 'AOT', 'PTTEP', 'PTT', 'SCB']
-API_KEY = os.getenv("PERPLEXITY_API_KEY", "YOUR_API_KEY")
-API_URL = "https://api.perplexity.ai/chat/completions"
+API_KEY = gemini_client.get_api_key()
+GEMINI_MODEL = gemini_client.get_model()
 
 def get_sentiment(stock):
-    query = (
-        f"สรุปข่าวและ sentiment หุ้น {stock} วันนี้ (ภาษาไทยสั้นๆ)"
-    )
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "sonar",
-        "messages": [{"role": "user", "content": query}],
-        "temperature": 0.2,
-        "top_p": 0.9
-    }
+    query = f"สรุปข่าวและ sentiment หุ้น {stock} วันนี้ (ภาษาไทยสั้นๆ)"
     try:
-        resp = requests.post(API_URL, headers=headers, json=payload, timeout=12)
-        result = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "")
-        return result
+        return gemini_client.generate_text(
+            query,
+            api_key=API_KEY,
+            model=GEMINI_MODEL,
+            timeout=12,
+        )
     except Exception:
         return "ข้อมูลผิดพลาด"
 

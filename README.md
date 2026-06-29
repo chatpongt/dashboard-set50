@@ -12,7 +12,7 @@
 
 | หน้า | รายละเอียด |
 |------|-----------|
-| 🏠 Sentiment Dashboard | วิเคราะห์ sentiment ด้วย Perplexity Sonar AI |
+| 🏠 Sentiment Dashboard | วิเคราะห์ sentiment ด้วย Google Gemini |
 | 📊 Valuation Dashboard | Valuation Sheet 100+ หุ้น 22 sectors พร้อม charts และ daily auto-refresh |
 
 ## Deploy (1 คลิก)
@@ -23,7 +23,8 @@
 
 ```toml
 # จำเป็น
-PERPLEXITY_API_KEY = "pplx-..."
+GEMINI_API_KEY = "AIza..."
+# GEMINI_MODEL = "gemini-2.0-flash"  # optional
 
 # Valuation auto-refresh (optional)
 VALUATION_GSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/..."

@@ -1,9 +1,9 @@
 import streamlit as st
 import plotly.express as px
 import pandas as pd
-import requests
 import os
 
+import gemini_client
 import supabase_client
 import email_service
 
@@ -18,27 +18,21 @@ def _get_secret(key: str) -> str:
     except (KeyError, FileNotFoundError, AttributeError):
         return os.getenv(key, "")
 
-API_KEY = _get_secret("PERPLEXITY_API_KEY")
-API_URL = "https://api.perplexity.ai/chat/completions"
+API_KEY = gemini_client.get_api_key(_get_secret)
+GEMINI_MODEL = gemini_client.get_model(_get_secret)
 
 # --- Functions ---
 def get_sentiment(stock):
     if not API_KEY:
-        return f"[Demo] หุ้น {stock} — กรุณาตั้งค่า PERPLEXITY_API_KEY"
+        return f"[Demo] หุ้น {stock} — กรุณาตั้งค่า GEMINI_API_KEY"
     query = f"สรุปข่าวและ sentiment หุ้น {stock} วันนี้ (ภาษาไทยสั้นๆ)"
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "model": "sonar",
-        "messages": [{"role": "user", "content": query}],
-        "temperature": 0.2,
-        "top_p": 0.9
-    }
     try:
-        resp = requests.post(API_URL, headers=headers, json=payload, timeout=15)
-        return resp.json().get("choices", [{}])[0].get("message", {}).get("content", "ไม่พบข้อมูล")
+        return gemini_client.generate_text(
+            query,
+            api_key=API_KEY,
+            model=GEMINI_MODEL,
+            timeout=15,
+        )
     except Exception as e:
         return f"ข้อมูลผิดพลาด: {e}"
 
@@ -53,7 +47,7 @@ def score_label(s):
 
 # --- UI ---
 st.title("📊 SET50 Sentiment Dashboard")
-st.caption("วิเคราะห์ sentiment หุ้นไทย real-time ด้วย Perplexity AI")
+st.caption("วิเคราะห์ sentiment หุ้นไทย real-time ด้วย Google Gemini")
 
 col1, col2 = st.columns([2, 1])
 
@@ -139,11 +133,11 @@ with st.sidebar:
     st.header("⚙️ การตั้งค่า")
 
     # API Keys status
-    st.markdown("**Perplexity API**")
+    st.markdown("**Gemini API**")
     if not API_KEY:
-        st.warning("ยังไม่ได้ตั้งค่า `PERPLEXITY_API_KEY`")
+        st.warning("ยังไม่ได้ตั้งค่า `GEMINI_API_KEY`")
     else:
-        st.success("Perplexity พร้อมใช้งาน ✅")
+        st.success(f"Gemini พร้อมใช้งาน ✅ ({GEMINI_MODEL})")
 
     st.markdown("**Supabase**")
     if supabase_client.is_configured():
@@ -187,4 +181,4 @@ with st.sidebar:
 
     st.markdown("---")
     st.caption("หุ้นที่รองรับ: SET50")
-    st.caption("Model: Perplexity Sonar")
+    st.caption(f"Model: {GEMINI_MODEL}")

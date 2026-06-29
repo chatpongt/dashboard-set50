@@ -33,7 +33,7 @@ def _build_html(results: list) -> str:
   <div style="max-width:720px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
     <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);padding:32px 36px">
       <h1 style="margin:0;color:#fff;font-size:24px">📊 SET50 Sentiment Report</h1>
-      <p style="margin:8px 0 0;color:#a0b4d0;font-size:14px">วิเคราะห์ sentiment หุ้นไทย real-time ด้วย Perplexity AI</p>
+      <p style="margin:8px 0 0;color:#a0b4d0;font-size:14px">วิเคราะห์ sentiment หุ้นไทย real-time ด้วย Google Gemini</p>
     </div>
     <div style="padding:28px 36px">
       <table style="width:100%;border-collapse:collapse">
@@ -49,7 +49,7 @@ def _build_html(results: list) -> str:
     </div>
     <div style="padding:20px 36px 28px;border-top:1px solid #eee">
       <p style="margin:0;color:#aaa;font-size:12px">
-        Powered by Perplexity Sonar · SET50 Sentiment Dashboard
+        Powered by Google Gemini · SET50 Sentiment Dashboard
       </p>
     </div>
   </div>
